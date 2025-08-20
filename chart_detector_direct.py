@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 class ChartDetection:
     """Single chart/table detection result."""
     title: Optional[str]
-    type: str  # line_chart, bar_chart, pie_chart, other
+    type: str  # line_chart, bar_chart, pie_chart, table, other
     confidence: float
     description: str
 
@@ -83,7 +83,7 @@ Instructions:
 1. Look for any data visualizations including charts, graphs, tables, plots, diagrams, etc.
 2. For EACH visualization found, provide the following information:
    - Extract the exact title/heading text (look above, below, or near the visualization)
-   - Classify the type as one of: "line_chart", "bar_chart", "pie_chart", or "other"
+   - Classify the type as one of: "line_chart", "bar_chart", "pie_chart", "table", or "other"
    - Rate your confidence in the classification (0.0 to 1.0)
    - Provide a brief description of what data is shown
 
@@ -91,7 +91,8 @@ Types:
 - "line_chart": Line graphs showing trends over time or relationships
 - "bar_chart": Bar charts, column charts, histograms showing comparisons
 - "pie_chart": Pie charts, donut charts showing proportions
-- "other": Tables, scatter plots, heat maps, or any other visualization
+- "table": Data tables, spreadsheets, or tabular data presentations
+- "other": Scatter plots, heat maps, or any other visualization
 
 CRITICAL INSTRUCTIONS:
 - Find ALL visualizations, even small or partial ones
@@ -121,10 +122,10 @@ Example of a good response:
       "description": "Line chart showing monthly sales figures across four quarters"
     },
     {
-      "title": null,
-      "type": "other",
-      "confidence": 0.85,
-      "description": "Data table with product categories and revenue figures"
+      "title": "Revenue by Product Category",
+      "type": "table",
+      "confidence": 0.95,
+      "description": "Data table showing product categories and their revenue figures"
     }
   ]
 }
@@ -242,7 +243,7 @@ Return ONLY the JSON, no other text, no explanations, no markdown code blocks.""
                                     description = detection.get("description", "")
                                     
                                     # Validate chart type
-                                    valid_types = ["line_chart", "bar_chart", "pie_chart", "other"]
+                                    valid_types = ["line_chart", "bar_chart", "pie_chart", "table", "other"]
                                     if chart_type not in valid_types:
                                         chart_type = "other"
                                     
@@ -260,7 +261,7 @@ Return ONLY the JSON, no other text, no explanations, no markdown code blocks.""
                             description = parsed.get("description", "")
                             
                             # Validate chart type
-                            valid_types = ["line_chart", "bar_chart", "pie_chart", "other"]
+                            valid_types = ["line_chart", "bar_chart", "pie_chart", "table", "other"]
                             if chart_type not in valid_types:
                                 chart_type = "other"
                             
@@ -298,7 +299,7 @@ Return ONLY the JSON, no other text, no explanations, no markdown code blocks.""
                         pass
                     
                     # Validate chart type
-                    valid_types = ["line_chart", "bar_chart", "pie_chart", "other"]
+                    valid_types = ["line_chart", "bar_chart", "pie_chart", "table", "other"]
                     if chart_type not in valid_types:
                         # Try to infer type from text
                         if 'line' in chart_type or 'trend' in chart_type:
@@ -307,6 +308,8 @@ Return ONLY the JSON, no other text, no explanations, no markdown code blocks.""
                             chart_type = "bar_chart"
                         elif 'pie' in chart_type or 'donut' in chart_type:
                             chart_type = "pie_chart"
+                        elif 'table' in chart_type:
+                            chart_type = "table"
                         else:
                             chart_type = "other"
                     
@@ -351,6 +354,8 @@ Return ONLY the JSON, no other text, no explanations, no markdown code blocks.""
                             chart_type = "bar_chart"
                         elif 'pie' in line.lower() or 'donut' in line.lower():
                             chart_type = "pie_chart"
+                        elif 'table' in line.lower():
+                            chart_type = "table"
                         
                         detections.append(ChartDetection(
                             title=title if title else None,
@@ -428,7 +433,7 @@ Return ONLY the JSON, no other text, no explanations, no markdown code blocks.""
                             try:
                                 # Validate and normalize type
                                 chart_type = detection.get("type", "other").lower()
-                                valid_types = ["line_chart", "bar_chart", "pie_chart", "other"]
+                                valid_types = ["line_chart", "bar_chart", "pie_chart", "table", "other"]
                                 if chart_type not in valid_types:
                                     logger.warning(f"Invalid chart type '{chart_type}' for detection {i} in {image_path}, using 'other'")
                                     chart_type = "other"
@@ -566,7 +571,7 @@ Return ONLY the JSON, no other text, no explanations, no markdown code blocks.""
         successful_images = sum(1 for r in results if r.success)
         
         # Count detections by type
-        type_counts = {"line_chart": 0, "bar_chart": 0, "pie_chart": 0, "other": 0}
+        type_counts = {"line_chart": 0, "bar_chart": 0, "pie_chart": 0, "table": 0, "other": 0}
         total_detections = 0
         
         for result in results:
