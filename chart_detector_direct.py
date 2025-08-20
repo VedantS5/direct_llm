@@ -690,8 +690,8 @@ async def main():
     parser.add_argument('--config', required=True, help='Configuration file path')
     parser.add_argument('--input', help='Input directory (overrides config)')
     parser.add_argument('--max-images', type=int, help='Maximum images to process (overrides config)')
-    parser.add_argument('--output', help='Output file path (JSON or CSV)')
-    parser.add_argument('--output-format', choices=['json', 'csv'], default='json', help='Output format')
+    parser.add_argument('--output', help='Output file path (CSV or JSON)')
+    parser.add_argument('--output-format', choices=['json', 'csv'], default='csv', help='Output format')
     parser.add_argument('--verbose', action='store_true', help='Enable verbose logging')
     
     args = parser.parse_args()
