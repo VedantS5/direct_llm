@@ -628,6 +628,58 @@ Return ONLY the JSON, no other text, no explanations, no markdown code blocks.""
         logger.info(f"Results saved to: {output_path}")
         return output_path
 
+    def save_results_csv(self, results: List[ImageAnalysisResult], output_path: str = None) -> str:
+        """Save results to CSV file."""
+        import csv
+        
+        if not output_path:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_path = f"chart_detection_results_{timestamp}.csv"
+        
+        # Use configured output directory if available
+        output_dir = self.config.get("directories", {}).get("output", "./output")
+        if not os.path.isabs(output_path):
+            output_path = os.path.join(output_dir, output_path)
+        
+        # Ensure output directory exists
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        
+        # Define CSV headers
+        headers = ["image_path", "success", "processing_time", "detection_title", "detection_type", "confidence", "description", "error"]
+        
+        with open(output_path, 'w', newline='', encoding='utf-8') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(headers)
+            
+            for result in results:
+                if result.detections:
+                    for detection in result.detections:
+                        writer.writerow([
+                            result.image_path,
+                            result.success,
+                            result.processing_time,
+                            detection.title or "",
+                            detection.type,
+                            detection.confidence,
+                            detection.description,
+                            result.error or ""
+                        ])
+                else:
+                    # Write a row even if there are no detections
+                    writer.writerow([
+                        result.image_path,
+                        result.success,
+                        result.processing_time,
+                        "",  # detection_title
+                        "",  # detection_type
+                        "",  # confidence
+                        "",  # description
+                        result.error or ""
+                    ])
+        
+        logger.info(f"Results saved to: {output_path}")
+        return output_path
+
 # Server CLI
 async def main():
     """Main CLI function for server deployment."""
@@ -638,7 +690,8 @@ async def main():
     parser.add_argument('--config', required=True, help='Configuration file path')
     parser.add_argument('--input', help='Input directory (overrides config)')
     parser.add_argument('--max-images', type=int, help='Maximum images to process (overrides config)')
-    parser.add_argument('--output', help='Output JSON file path')
+    parser.add_argument('--output', help='Output file path (JSON or CSV)')
+    parser.add_argument('--output-format', choices=['json', 'csv'], default='json', help='Output format')
     parser.add_argument('--verbose', action='store_true', help='Enable verbose logging')
     
     args = parser.parse_args()
@@ -696,7 +749,10 @@ async def main():
         summary = detector.generate_summary(results)
         
         # Save results
-        output_file = detector.save_results(results, args.output)
+        if args.output_format == 'csv':
+            output_file = detector.save_results_csv(results, args.output)
+        else:
+            output_file = detector.save_results(results, args.output)
         print(f"\n💾 Results saved to: {output_file}")
         
         # Print summary
