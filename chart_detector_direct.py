@@ -671,6 +671,7 @@ Return ONLY the JSON, no other text, no explanations, no markdown code blocks.""
                 # Extract the directory name which contains the key (e.g., key_99795608)
                 dir_name = os.path.basename(os.path.dirname(image_path))
                 
+                # Only write rows for images that have detections
                 if result.detections:
                     for detection in result.detections:
                         writer.writerow([
@@ -685,20 +686,7 @@ Return ONLY the JSON, no other text, no explanations, no markdown code blocks.""
                             detection.description,
                             result.error or ""
                         ])
-                else:
-                    # Write a row even if there are no detections
-                    writer.writerow([
-                        dir_name,  # filename (key directory name)
-                        page_number,  # page_number
-                        result.image_path,
-                        result.success,
-                        result.processing_time,
-                        "",  # detection_title
-                        "",  # detection_type
-                        "",  # confidence
-                        "",  # description
-                        result.error or ""
-                    ])
+                # If there are no detections, we simply don't write any rows for this image
         
         logger.info(f"Results saved to: {output_path}")
         return output_path
