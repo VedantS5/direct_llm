@@ -66,10 +66,24 @@ python3 chart_detector_direct.py --config main_config_direct.json --verbose
 
 ## 📊 Output
 
-Results are saved as JSON with:
+Results are saved as JSON or CSV with:
 - Detection summary (counts, processing time)
 - Individual image results
 - Chart titles, types, and confidence scores
+
+### CSV Format
+
+The CSV output includes the following columns:
+- `filename`: The name of the file (directory) being processed (e.g., key_99795608)
+- `page_number`: The page number extracted from the image filename (e.g., 8 for page8.png)
+- `image_path`: Full path to the image file
+- `success`: Whether the analysis was successful
+- `processing_time`: Time taken to process the image
+- `detection_title`: Title of the detected chart/table
+- `detection_type`: Type of visualization (line_chart, bar_chart, pie_chart, table, other)
+- `confidence`: Confidence score (0.0 to 1.0)
+- `description`: Description of the detected visualization
+- `error`: Any error messages (if applicable)
 
 ## 🔧 Key Differences from ContextGem Version
 

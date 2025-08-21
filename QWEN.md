@@ -31,4 +31,8 @@ This document outlines the key principles and practices to follow when working o
 6. **Documentation Search**:
    - Search relevant documentation in Context7 MCP when needed.
 
+7. **Version Control**:
+   - Always push changes to git after implementing features or fixes.
+   - Use `git add . && git commit -m "Brief description of changes" && git push` to commit and push changes.
+
 By following these guidelines, we ensure a consistent and maintainable codebase that's optimized for server environments.

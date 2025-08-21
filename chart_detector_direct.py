@@ -649,17 +649,33 @@ Return ONLY the JSON, no other text, no explanations, no markdown code blocks.""
         # Ensure output directory exists
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         
-        # Define CSV headers
-        headers = ["image_path", "success", "processing_time", "detection_title", "detection_type", "confidence", "description", "error"]
+        # Define CSV headers with new filename and page_number columns
+        headers = ["filename", "page_number", "image_path", "success", "processing_time", "detection_title", "detection_type", "confidence", "description", "error"]
         
         with open(output_path, 'w', newline='', encoding='utf-8') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(headers)
             
             for result in results:
+                # Extract filename and page number from image path
+                image_path = result.image_path
+                # Get the basename of the file (e.g., page8.png)
+                filename_base = os.path.basename(image_path)
+                # Extract the filename part without extension (e.g., page8)
+                filename_without_ext = os.path.splitext(filename_base)[0]
+                # Extract page number from filename (assuming format is "pageX")
+                page_number = ""
+                if filename_without_ext.startswith("page") and filename_without_ext[4:].isdigit():
+                    page_number = filename_without_ext[4:]
+                
+                # Extract the directory name which contains the key (e.g., key_99795608)
+                dir_name = os.path.basename(os.path.dirname(image_path))
+                
                 if result.detections:
                     for detection in result.detections:
                         writer.writerow([
+                            dir_name,  # filename (key directory name)
+                            page_number,  # page_number
                             result.image_path,
                             result.success,
                             result.processing_time,
@@ -672,6 +688,8 @@ Return ONLY the JSON, no other text, no explanations, no markdown code blocks.""
                 else:
                     # Write a row even if there are no detections
                     writer.writerow([
+                        dir_name,  # filename (key directory name)
+                        page_number,  # page_number
                         result.image_path,
                         result.success,
                         result.processing_time,
