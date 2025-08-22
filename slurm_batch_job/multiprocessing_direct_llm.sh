@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J direct_llm_single_test
+#SBATCH -J direct_llm_multiprocessing
 #SBATCH -A r01352
 #SBATCH -o txt_logs/direct_llm_multiprocessing_%j.txt
 #SBATCH -e err_logs/direct_llm_multiprocessing_%j.err
