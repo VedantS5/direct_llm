@@ -35,6 +35,9 @@ python3 chart_detector_direct.py --config single_test_config_direct.json
 # Process all images with main configuration
 python3 chart_detector_direct.py --config main_config_direct.json
 
+# Process images using multiprocessing across 4 H100 GPUs
+python3 chart_detector_direct.py --config multiprocessing_config_direct.json
+
 # Override configuration options
 python3 chart_detector_direct.py --config main_config_direct.json --max-images 5
 python3 chart_detector_direct.py --config main_config_direct.json --input /path/to/images
@@ -69,6 +72,7 @@ The entire Python implementation is contained in `chart_detector_direct.py`. Thi
 The project uses JSON configuration files instead of code modifications:
 - `main_config_direct.json`: Production configuration for processing all images
 - `single_test_config_direct.json`: Test configuration for limited image processing
+- `multiprocessing_config_direct.json`: Multiprocessing configuration for parallel processing across 4 H100 GPUs
 - Configurable prompts, model settings, directories, and processing parameters
 
 ### GPU and Server Architecture

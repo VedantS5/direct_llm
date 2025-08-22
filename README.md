@@ -33,6 +33,7 @@ direct_llm/
 ├── chart_detector_direct.py       # Main server implementation (ONE CODE FILE)
 ├── main_config_direct.json       # Main configuration for all files (copied from main project)
 ├── single_test_config_direct.json # Test configuration for specific files (copied from main project)
+├── multiprocessing_config_direct.json # Multiprocessing configuration for 4 H100 GPUs
 ├── requirements.txt              # Python dependencies (no ContextGem)
 ├── ollama_server_deployment_direct.sh # Server deployment script
 └── README.md                     # This file
@@ -43,6 +44,7 @@ direct_llm/
 Configuration files are direct copies from the main project with these changes:
 1. `contextgem` section replaced with `ollama` section
 2. Added configurable `prompt` field for analysis instructions
+3. Added `multiprocessing` section for parallel processing across multiple GPUs
 
 ## 🎯 Usage Examples
 
@@ -53,6 +55,9 @@ python3 chart_detector_direct.py --config single_test_config_direct.json
 
 # Process all files
 python3 chart_detector_direct.py --config main_config_direct.json
+
+# Process files using multiprocessing across 4 H100 GPUs
+python3 chart_detector_direct.py --config multiprocessing_config_direct.json
 
 # Override max images from command line
 python3 chart_detector_direct.py --config main_config_direct.json --max-images 5

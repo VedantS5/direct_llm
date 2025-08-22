@@ -56,22 +56,35 @@ class DirectChartDetector:
         self.client = None
         
     async def initialize(self):
-        """Initialize the Ollama client."""
+        """Initialize the Ollama client(s)."""
         try:
             # Get Ollama configuration
             ollama_config = self.config.get("ollama", {})
             model = ollama_config.get("model", "qwen2.5vl:32b")
             api_base = ollama_config.get("api_base", "http://localhost:11434")
             
-            # Initialize Ollama client
-            self.client = ollama.AsyncClient(host=api_base)
-            self.model = model
+            # Check if we're using multiprocessing mode
+            self.multiprocessing_mode = self.config.get("multiprocessing", {}).get("enabled", False)
             
-            logger.info(f"Initialized Ollama client with model: {model}")
-            logger.info(f"Using API base: {api_base}")
+            if self.multiprocessing_mode:
+                # Initialize multiple clients for different ports
+                self.clients = []
+                ports = self.config.get("multiprocessing", {}).get("ports", [11434, 11435, 11436, 11437])
+                for port in ports:
+                    client_api_base = f"http://localhost:{port}"
+                    client = ollama.AsyncClient(host=client_api_base)
+                    self.clients.append(client)
+                    logger.info(f"Initialized Ollama client for {client_api_base} with model: {model}")
+                self.model = model
+            else:
+                # Initialize single Ollama client
+                self.client = ollama.AsyncClient(host=api_base)
+                self.model = model
+                logger.info(f"Initialized Ollama client with model: {model}")
+                logger.info(f"Using API base: {api_base}")
             
         except Exception as e:
-            logger.error(f"Failed to initialize Ollama client: {e}")
+            logger.error(f"Failed to initialize Ollama client(s): {e}")
             raise
     
     def _create_analysis_prompt(self) -> str:
@@ -392,8 +405,16 @@ Return ONLY the JSON, no other text, no explanations, no markdown code blocks.""
                 'images': [image_base64]
             }
             
+            # Determine which client to use
+            if hasattr(self, 'multiprocessing_mode') and self.multiprocessing_mode:
+                # For multiprocessing, we'll determine the client based on the image path
+                # This will be handled in the calling function
+                client = self.client
+            else:
+                client = self.client
+                
             logger.debug(f"Sending request to Ollama with model: {self.model}")
-            response = await self.client.chat(
+            response = await client.chat(
                 model=self.model,
                 messages=[message],
                 options={
@@ -503,6 +524,93 @@ Return ONLY the JSON, no other text, no explanations, no markdown code blocks.""
                 detections=[],
                 error=str(e)
             )
+    
+    async def analyze_image_with_client(self, image_path: str, client_index: int) -> ImageAnalysisResult:
+        """Analyze a single image using a specific Ollama client."""
+        # Set the client for this specific call
+        self.client = self.clients[client_index]
+        return await self.analyze_image(image_path)
+    
+    async def analyze_directory_multiprocessing(self, input_dir: Optional[str] = None, max_directories: Optional[int] = None) -> List[ImageAnalysisResult]:
+        """Analyze images across multiple key directories using multiprocessing."""
+        # Use configured input directory if not provided
+        if input_dir is None:
+            input_dir = self.config.get("directories", {}).get("input_images", "./input_images")
+            logger.info(f"Using configured input directory: {input_dir}")
+        
+        input_path = Path(input_dir)
+        if not input_path.exists():
+            raise ValueError(f"Directory not found: {input_dir}")
+        
+        # Find key directories (those that match key_XXXX pattern)
+        key_directories = [d for d in input_path.iterdir() if d.is_dir() and d.name.startswith('key_')]
+        
+        # Sort directories to ensure consistent ordering
+        key_directories.sort(key=lambda x: x.name)
+        
+        # Limit number of directories if specified
+        if max_directories:
+            key_directories = key_directories[:max_directories]
+        
+        if not key_directories:
+            logger.warning(f"No key directories found in {input_dir}")
+            return []
+        
+        logger.info(f"Found {len(key_directories)} key directories to process")
+        
+        # Distribute directories across the available clients
+        results = []
+        semaphore = asyncio.Semaphore(len(self.clients))  # Limit concurrent tasks
+        
+        async def process_directory_with_client(dir_path: Path, client_index: int):
+            """Process a single directory with a specific client."""
+            async with semaphore:
+                logger.info(f"Processing directory {dir_path.name} with client {client_index}")
+                
+                # Find image files in this directory
+                image_extensions = self.config.get("file_patterns", {}).get("image_extensions", ['.png', '.jpg', '.jpeg', '.tiff', '.bmp'])
+                image_files = []
+                
+                for ext in image_extensions:
+                    image_files.extend(dir_path.glob(f"*{ext}"))
+                    image_files.extend(dir_path.glob(f"*{ext.upper()}"))
+                
+                dir_results = []
+                for image_file in image_files:
+                    try:
+                        result = await self.analyze_image_with_client(str(image_file), client_index)
+                        dir_results.append(result)
+                        logger.info(f"Processed {image_file.name} from {dir_path.name}: {len(result.detections)} detections")
+                    except Exception as e:
+                        logger.error(f"Failed to process {image_file} from {dir_path.name}: {e}")
+                        dir_results.append(ImageAnalysisResult(
+                            image_path=str(image_file),
+                            success=False,
+                            processing_time=0.0,
+                            detections=[],
+                            error=str(e)
+                        ))
+                
+                return dir_results
+        
+        # Create tasks for all directories
+        tasks = []
+        for i, directory in enumerate(key_directories):
+            client_index = i % len(self.clients)  # Distribute evenly across clients
+            task = process_directory_with_client(directory, client_index)
+            tasks.append(task)
+        
+        # Process all directories concurrently
+        directory_results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        # Flatten results
+        for dir_result in directory_results:
+            if isinstance(dir_result, Exception):
+                logger.error(f"Directory processing failed: {dir_result}")
+                continue
+            results.extend(dir_result)
+        
+        return results
     
     async def analyze_directory(self, input_dir: Optional[str] = None, max_images: Optional[int] = None) -> List[ImageAnalysisResult]:
         """Analyze all images in a directory."""
@@ -750,7 +858,16 @@ async def main():
     # Process images
     try:
         print(f"\n⚡ Starting image analysis...")
-        results = await detector.analyze_directory(input_dir, max_images)
+        
+        # Check if multiprocessing mode is enabled
+        multiprocessing_enabled = config.get("multiprocessing", {}).get("enabled", False)
+        max_directories = config.get("multiprocessing", {}).get("max_directories")
+        
+        if multiprocessing_enabled:
+            print("🔄 Using multiprocessing mode")
+            results = await detector.analyze_directory_multiprocessing(input_dir, max_directories)
+        else:
+            results = await detector.analyze_directory(input_dir, max_images)
         
         if not results:
             print("⚠️  No images processed")
