@@ -27,6 +27,15 @@ Direct LLM is a chart and table detection system that uses Ollama vision models 
 ./ollama_server_deployment_direct.sh h100  # or v100, a100, qwq, image
 ```
 
+### SLURM Batch Jobs
+```bash
+# Submit the single file test job
+sbatch slurm_batch_job/single_file_test_direct_llm.sh
+
+# Submit the multiprocessing job for 4 H100 GPUs
+sbatch slurm_batch_job/multiprocessing_direct_llm.sh
+```
+
 ### Chart Detection Analysis
 ```bash
 # Test on specific key directory with limited images

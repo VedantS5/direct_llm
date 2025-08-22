@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH -J ollama_analyst
+#SBATCH -J direct_llm_single_test
 #SBATCH -A r01352
-#SBATCH -o txt_logs.txt
-#SBATCH -e err_logs.err
+#SBATCH -o txt_logs/direct_llm_single_test_%j.txt
+#SBATCH -e err_logs/direct_llm_single_test_%j.err
 #SBATCH -p hopper
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=40
@@ -12,20 +12,8 @@
 #SBATCH --mem=120G
 #SBATCH --gpus-per-node=1
 
-#move to the directory from where you submitted the job
-module load python/gpu/3.11.5
+# This batch job has been moved to the slurm_batch_job directory
+# Please use slurm_batch_job/single_file_test_direct_llm.sh instead
 
-cd /N/project/fads_ng/analyst_reports_visualizations/codes/direct_llm
-
-echo 'chmod +x /N/project/fads_ng/ollama_setup/bin/ollama'
-echo 'chmod +x /N/project/fads_ng/ollama_setup/lib/ollama'
-
-echo 'export PATH=$PATH:/N/project/fads_ng/ollama_setup/bin' >> ~/.bashrc
-source ~/.bashrc
-
-pip install -r requirements.txt
-
-source ollama_server_deployment_direct.sh single
-
-#run program/commands
-python chart_detector_direct.py --config single_test_config_direct.json
+echo "This batch job has been moved to the slurm_batch_job directory"
+echo "Please use slurm_batch_job/single_file_test_direct_llm.sh instead"

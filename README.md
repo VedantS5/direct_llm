@@ -36,6 +36,11 @@ direct_llm/
 ├── multiprocessing_config_direct.json # Multiprocessing configuration for 4 H100 GPUs
 ├── requirements.txt              # Python dependencies (no ContextGem)
 ├── ollama_server_deployment_direct.sh # Server deployment script
+├── slurm_batch_job/              # SLURM batch job scripts and logs
+│   ├── single_file_test_direct_llm.sh # Single file test batch job
+│   ├── multiprocessing_direct_llm.sh # Multiprocessing batch job for 4 GPUs
+│   ├── txt_logs/                 # Output logs directory
+│   └── err_logs/                 # Error logs directory
 └── README.md                     # This file
 ```
 
@@ -75,6 +80,24 @@ Results are saved as JSON or CSV with:
 - Detection summary (counts, processing time)
 - Individual image results
 - Chart titles, types, and confidence scores
+
+## 🖥️ SLURM Batch Jobs
+
+The project includes pre-configured SLURM batch jobs for both single file testing and multiprocessing across 4 GPUs:
+
+### Single File Test Job
+```bash
+# Submit the single file test job
+sbatch slurm_batch_job/single_file_test_direct_llm.sh
+```
+
+### Multiprocessing Job (4 GPUs)
+```bash
+# Submit the multiprocessing job for 4 H100 GPUs
+sbatch slurm_batch_job/multiprocessing_direct_llm.sh
+```
+
+Output and error logs are stored in `slurm_batch_job/txt_logs/` and `slurm_batch_job/err_logs/` respectively, with job IDs in the filenames.
 
 ### CSV Format
 
