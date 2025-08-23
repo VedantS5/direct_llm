@@ -4,27 +4,39 @@ Direct implementation of chart and table detection from images using Ollama's vi
 
 ## 🚀 Quick Start
 
-### 1. Server Setup
+There are two ways to run this code:
+
+### 1. Interactive Mode
+
+First, get a machine with the required resources:
 ```bash
-# Run Ollama server in single mode
-./ollama_server_deployment_direct.sh single
+srun -p hopper --cpus-per-task 20 --gpus-per-node 1 --mem 40GB -A r01352 --time 1:00:00 --pty bash
 ```
 
-This script will automatically:
-- Install Python dependencies from `requirements.txt`
-- Pull the required vision model (`qwen2.5vl:32b`)
-
-### 2. Test on Specific Files
+Then load the required modules:
 ```bash
-# Test on specific key directory with up to 11 images
-python3 chart_detector_direct.py --config single_test_config_direct.json
+module load python/gpu/3.11.5
 ```
 
-### 3. Process All Images
+Source the Ollama server deployment script:
 ```bash
-# Process all images with main configuration
-python3 chart_detector_direct.py --config main_config_direct.json
+source ollama_server_deployment_direct.sh image
 ```
+
+Finally, run the chart detector:
+```bash
+python3 chart_detector_direct.py --config multiprocessing_config_direct.json
+```
+
+### 2. Batch Job Mode
+
+Navigate to the slurm_batch_job directory and submit the batch job:
+```bash
+cd slurm_batch_job
+sbatch multiprocessing_direct_llm.sh
+```
+
+This will run on 4 H100 GPUs with exactly the same configuration as described in interactive mode.
 
 ## 📁 Project Structure
 
